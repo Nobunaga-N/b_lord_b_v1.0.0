@@ -4,7 +4,7 @@
 emulators:
   - name: "LDPlayer"
     index: 0
-    adb_port: 5555
+    adb_port: 5554
     account_level: 10
     profile: "rushing"
 
@@ -16,6 +16,6 @@ emulators:
 
   - name: "LDPlayer-2"
     index: 2
-    adb_port: 5557
+    adb_port: 5558
     account_level: 19
     profile: "farming"

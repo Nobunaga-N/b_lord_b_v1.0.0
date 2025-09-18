@@ -17,7 +17,7 @@ adb:
   retry_delay: 5
 
 game:
-  package_name: "com.beastlord.game"  # TODO: уточнить реальное имя пакета
+  package_name: "com.allstarunion.beastlord"
   start_activity: "MainActivity"
   loading_timeout: 30
 
