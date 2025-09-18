@@ -1,0 +1,51 @@
+# Конфигурация для фазы farming (19+ уровень)
+
+phase: "farming"
+check_interval: 720  # 12 часов
+max_actions_per_run: 10
+quick_check_mode: true
+
+actions:
+  - name: "check_shield"
+    enabled: true
+    required: true
+    cooldown: 0
+    priority: 1
+
+  - name: "collect_resources"
+    enabled: true
+    required: true
+    cooldown: 43200  # 12 часов
+    priority: 2
+
+  - name: "gather_resources"
+    enabled: true
+    resource_types:
+      - "food"
+      - "wood"
+      - "stone"
+      - "gold"
+    duration: 28800  # 8 часов
+    priority: 3
+
+  - name: "hunt_monsters"
+    enabled: true
+    count: 5
+    min_energy: 200
+    priority: 4
+    use_energy_items: false
+
+  - name: "alliance_help"
+    enabled: true
+    priority: 5
+
+  - name: "alliance_donation"
+    enabled: true
+    priority: 6
+
+  - name: "long_term_building"
+    enabled: false  # Только при необходимости
+    buildings:
+      - "wall"
+      - "watchtower"
+    priority: 7

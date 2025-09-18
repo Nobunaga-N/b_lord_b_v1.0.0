@@ -1,0 +1,35 @@
+# Общие настройки бота
+
+app:
+  name: "Beast Lord Bot"
+  version: "1.0.0"
+  debug: true
+
+emulator:
+  type: "LDPlayer"
+  base_port: 5555
+  resolution: "540x960"  #
+  startup_timeout: 60     # секунд
+
+adb:
+  connection_timeout: 10
+  retry_attempts: 3
+  retry_delay: 5
+
+game:
+  package_name: "com.beastlord.game"  # TODO: уточнить реальное имя пакета
+  start_activity: "MainActivity"
+  loading_timeout: 30
+
+performance:
+  max_parallel_emulators: 3
+  batch_size: 5
+  batch_delay: 60  # секунд между батчами
+  cpu_threshold: 80  # процент загрузки CPU для throttling
+  ram_threshold: 80  # процент загрузки RAM
+
+paths:
+  screenshots: "screenshots"
+  logs: "logs"
+  templates: "templates"
+  database: "data/beast_lord.db"

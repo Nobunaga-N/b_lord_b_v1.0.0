@@ -1,0 +1,57 @@
+# Конфигурация для фазы rushing (10-15 уровень)
+
+phase: "rushing"
+check_interval: 45  # минут
+max_actions_per_run: 20
+
+actions:
+  - name: "check_shield"
+    enabled: true
+    required: true
+    cooldown: 0
+    priority: 1
+
+  - name: "collect_resources"
+    enabled: true
+    required: true
+    cooldown: 1800  # 30 минут
+    priority: 2
+
+  - name: "build_from_queue"
+    enabled: true
+    buildings:
+      - "barracks"
+      - "farm"
+      - "sawmill"
+      - "quarry"
+      - "castle"
+    skip_if_no_resources: true
+    prime_time_required: false
+    priority: 3
+
+  - name: "evolution"
+    enabled: true
+    research:
+      - "agriculture_1"
+      - "military_1"
+      - "defense_1"
+    priority: 4
+    max_simultaneous: 1
+
+  - name: "hunt_monsters"
+    enabled: true
+    count: 5
+    min_energy: 50
+    priority: 5
+
+  - name: "alliance_help"
+    enabled: true
+    priority: 6
+
+  - name: "complete_quests"
+    enabled: true
+    types:
+      - "daily"
+      - "chapter"
+      - "event"
+    priority: 7

@@ -1,0 +1,53 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+logs/*.log
+screenshots/*.png
+screenshots/*.jpg
+data/*.db
+data/*.db-journal
+templates/temp/
+
+# Config overrides (для локальных настроек)
+configs/local_settings.yaml
+configs/*.local.yaml
+
+# Test files
+test_*.py
+tests/
+
+# Temporary files
+*.tmp
+*.bak
+temp/
+tmp/
+
+# Credentials (если будут)
+.env
+credentials.yaml
+accounts.txt
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Documentation
+docs/_build/

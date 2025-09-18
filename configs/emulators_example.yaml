@@ -1,0 +1,21 @@
+# Пример конфигурации эмуляторов
+# Сохраните как configs/emulators.yaml
+
+emulators:
+  - name: "LDPlayer"
+    index: 0
+    adb_port: 5555
+    account_level: 10
+    profile: "rushing"
+
+  - name: "LDPlayer-1"  
+    index: 1
+    adb_port: 5556
+    account_level: 15
+    profile: "developing"
+
+  - name: "LDPlayer-2"
+    index: 2
+    adb_port: 5557
+    account_level: 19
+    profile: "farming"

@@ -1,0 +1,61 @@
+# Конфигурация для фазы developing (16-19 уровень)
+
+phase: "developing"
+check_interval: 180  # 3 часа
+max_actions_per_run: 15
+
+actions:
+  - name: "check_shield"
+    enabled: true
+    required: true
+    cooldown: 0
+    priority: 1
+
+  - name: "collect_resources"
+    enabled: true
+    required: true
+    cooldown: 3600  # 1 час
+    priority: 2
+
+  - name: "build_from_queue"
+    enabled: true
+    buildings:
+      - "castle"
+      - "research_center"
+      - "barracks"
+      - "hospital"
+    skip_if_no_resources: false
+    prime_time_required: true  # Учитывать прайм-таймы
+    prime_hours: [8, 14, 20]   # Часы для оптимального строительства
+    priority: 3
+
+  - name: "evolution"
+    enabled: true
+    research:
+      - "military_2"
+      - "economy_2"
+      - "defense_2"
+    priority: 4
+    prime_time_required: true
+
+  - name: "train_troops"
+    enabled: true
+    min_resources: 100000
+    priority: 5
+    prime_time_required: true
+
+  - name: "hunt_monsters"
+    enabled: true
+    count: 10
+    min_energy: 100
+    priority: 6
+
+  - name: "gather_resources"
+    enabled: true
+    resource_types:
+      - "food"
+      - "wood"
+      - "stone"
+      - "gold"
+    duration: 3600  # 1 час
+    priority: 7
