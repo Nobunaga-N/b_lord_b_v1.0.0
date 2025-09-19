@@ -1,0 +1,44 @@
+auto_profiles:
+  default_profile: rushing
+  new_emulators_enabled: false
+  patterns:
+  - pattern: сервер 333-*
+    profile: rushing
+  - pattern: сервер 444-*
+    profile: farming
+emulators:
+- enabled: true
+  index: 0
+  is_running: false
+  name: 0) astralshop@gmail
+  priority: 1
+  profile: rushing
+- adb_port: 5556
+  enabled: true
+  index: 1
+  is_running: true
+  name: 1) himera.like.a.knigh
+  priority: 2
+  profile: rushing
+- enabled: true
+  index: 2
+  is_running: false
+  name: 2) eavercesm@gmail.com
+  priority: 3
+  profile: rushing
+- enabled: true
+  index: 3
+  is_running: false
+  name: 3) enemcov210@gmail.com
+  priority: 4
+  profile: rushing
+- enabled: true
+  index: 4
+  is_running: false
+  name: LDPlayer-4
+  priority: 5
+  profile: rushing
+ldplayer:
+  auto_scan_interval: 3600
+  last_scan: '2025-09-19T05:39:13.111731'
+  path: E:\LDPlayer\LDPlayer9\ldconsole.exe

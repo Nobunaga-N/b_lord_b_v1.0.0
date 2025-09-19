@@ -1,0 +1,139 @@
+# Настройки LDConsole Manager для управления эмуляторами
+
+ldconsole:
+  # Путь к ldconsole.exe (будет определён автоматически если не указан)
+  path: ""                           # Пустой = автоматический поиск
+  startup_timeout: 60               # Таймаут запуска эмулятора в секундах
+  adb_ready_timeout: 30             # Таймаут готовности ADB подключения
+  shutdown_timeout: 15              # Таймаут корректной остановки
+  force_kill_timeout: 30            # Таймаут принудительного завершения
+  command_timeout: 10               # Таймаут для обычных команд (list2, modify)
+
+# Управление батчами эмуляторов
+batch_management:
+  max_parallel_starts: 3            # Максимум одновременных запусков
+  start_delay_between: 5            # Пауза между запусками в секундах
+  max_batch_size: 8                 # Максимальный размер батча
+  min_batch_size: 1                 # Минимальный размер батча
+  readiness_check_interval: 3       # Интервал проверки готовности в секундах
+  max_startup_retries: 2            # Максимум попыток запуска при неудаче
+
+# Пороги системных ресурсов
+resource_thresholds:
+  cpu_warning: 70                   # % CPU для предупреждения
+  cpu_critical: 85                  # % CPU для экстренных мер
+  memory_warning: 75                # % RAM для предупреждения
+  memory_critical: 90               # % RAM для экстренных мер
+  disk_warning: 85                  # % диска для предупреждения
+  disk_critical: 95                 # % диска для экстренных мер
+
+# Экстренные действия при превышении порогов ресурсов
+emergency_actions:
+  reduce_batch_size: true           # Уменьшать размер батчей
+  lower_performance_profiles: true  # Понижать профили производительности
+  stop_non_critical_emulators: true # Останавливать некритичные эмуляторы
+  delay_new_tasks: true             # Откладывать новые задачи
+  force_garbage_collection: true   # Принудительная очистка памяти
+
+# Мониторинг системы
+monitoring:
+  check_interval: 30                # Интервал мониторинга в секундах
+  history_retention_hours: 24       # Сколько часов хранить историю
+  alert_threshold_breaches: 3       # Количество нарушений для алерта
+  health_check_enabled: true        # Включить проверки здоровья
+  performance_logging: true         # Логировать показатели производительности
+
+# Стратегии восстановления при сбоях
+recovery_strategies:
+  auto_restart_failed: true         # Автоматически перезапускать упавшие эмуляторы
+  max_restart_attempts: 3           # Максимум попыток перезапуска
+  restart_delay: 10                 # Пауза между попытками перезапуска (секунды)
+  cleanup_crashed_processes: true   # Очищать зависшие процессы
+  reset_adb_on_failure: true        # Перезапускать ADB при проблемах
+
+# Оптимизация производительности
+performance_optimization:
+  # Кэширование состояний эмуляторов
+  cache_emulator_status: true       # Кэшировать статусы эмуляторов
+  cache_ttl_seconds: 60            # Время жизни кэша в секундах
+
+  # Приоритизация задач
+  prioritize_critical_tasks: true   # Приоритет критичным задачам
+  task_queue_max_size: 50          # Максимальный размер очереди задач
+
+  # Оптимизация команд ldconsole
+  batch_modify_commands: true       # Группировать команды modify
+  parallel_status_checks: true     # Параллельные проверки статуса
+
+# Интеграция с системой мониторинга ресурсов
+resource_integration:
+  enabled: true                     # Включить интеграцию с ResourceMonitor
+  adaptive_batch_sizing: true       # Адаптивный размер батчей
+  dynamic_profile_switching: true   # Динамическое переключение профилей
+  predictive_resource_management: false  # Предиктивное управление ресурсами
+
+# Безопасность и стабильность
+safety_settings:
+  # Ограничения безопасности
+  max_emulators_total: 50          # Максимальное общее количество эмуляторов
+  min_system_memory_free_mb: 2048  # Минимум свободной памяти системы
+  min_disk_space_free_gb: 10       # Минимум свободного места на диске
+
+  # Защита от перегрузки
+  cooldown_after_mass_start: 30    # Пауза после массового запуска (секунды)
+  cooldown_after_mass_stop: 10     # Пауза после массовой остановки (секунды)
+  rate_limit_commands: true        # Ограничение частоты команд
+  max_commands_per_minute: 60      # Максимум команд в минуту
+
+# Логирование и отладка
+logging:
+  # Уровни логирования
+  default_level: "INFO"            # DEBUG, INFO, WARNING, ERROR
+  ldconsole_commands: "DEBUG"      # Логирование ldconsole команд
+  batch_operations: "INFO"         # Логирование батчевых операций
+  performance_metrics: "INFO"      # Логирование метрик производительности
+
+  # Настройки файлов логов
+  log_rotation_size_mb: 100        # Размер лог-файла для ротации
+  log_retention_days: 7            # Сколько дней хранить логи
+  log_compression: true            # Сжимать старые логи
+
+  # Специальные логи для отладки
+  debug_mode: false                # Режим отладки (очень подробные логи)
+  trace_adb_commands: false        # Трассировка ADB команд
+  profile_execution_time: false    # Профилирование времени выполнения
+
+# Совместимость и резервирование
+compatibility:
+  # Поддержка различных версий LDPlayer
+  ldplayer_versions:
+    - "9.0"
+    - "4.0"
+
+  # Резервные стратегии
+  fallback_to_killall: true        # Использовать killall если quit не работает
+  legacy_command_support: true     # Поддержка старых команд
+  alternative_adb_ports: true       # Искать альтернативные ADB порты
+
+  # Экспериментальные функции
+  experimental_features:
+    gpu_acceleration_profiles: false    # Профили GPU ускорения
+    network_optimization: false        # Оптимизация сети для эмуляторов
+    advanced_memory_management: false  # Продвинутое управление памятью
+
+# Интеграция с внешними системами
+integration:
+  # Базы данных для логирования операций
+  database_logging: true           # Логировать операции в БД
+  metrics_export: false           # Экспорт метрик в внешние системы
+
+  # Уведомления
+  notifications:
+    enabled: false                 # Уведомления о критичных событиях
+    channels: ["log"]             # Каналы уведомлений: log, email, webhook
+
+  # API для внешнего управления
+  api_interface:
+    enabled: false                # REST API для управления
+    port: 8080                   # Порт для API
+    authentication: true         # Требовать аутентификацию
