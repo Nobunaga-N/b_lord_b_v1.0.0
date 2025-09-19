@@ -1,5 +1,6 @@
 # Конфигурация профилей производительности для эмуляторов LDPlayer
 # Каждый профиль оптимизирован под определённую стадию игры
+# ВАЖНО: Все профили используют разрешение 540x960 для совместимости с шаблонами изображений
 
 profiles:
   # Профиль для активной прокачки 10-15 уровень
@@ -7,50 +8,57 @@ profiles:
     cpu: 4                    # Количество CPU ядер
     memory: 4096              # Память в MB
     fps: 60                   # Целевой FPS
-    resolution: "540x960"   # Разрешение экрана (высокое качество)
+    resolution: "540x960"     # УНИФИЦИРОВАННОЕ разрешение
     description: "Активная прокачка 10-15 lvl - максимальная производительность для быстрого развития"
     priority: "high"          # Приоритет профиля
     use_case: "intensive_gameplay"
-    
+
   # Профиль для развития 16-19 уровень
   developing:
     cpu: 3                    # Меньше CPU чем у rushing
     memory: 3072              # Уменьшенная память
     fps: 45                   # Средний FPS
-    resolution: "540x960"    # Среднее разрешение для баланса
+    resolution: "540x960"     # УНИФИЦИРОВАННОЕ разрешение
     description: "Развитие 16-19 lvl - сбалансированная производительность"
     priority: "medium"
     use_case: "balanced_gameplay"
-    
+
   # Профиль для фарма ресурсов 19+ уровень
   farming:
     cpu: 2                    # Минимальные требования к CPU
     memory: 2048              # Базовый объём памяти
     fps: 30                   # Низкий FPS для экономии ресурсов
-    resolution: "540x960"    # Среднее разрешение
+    resolution: "540x960"     # УНИФИЦИРОВАННОЕ разрешение
     description: "Фарм ресурсов 19+ lvl - экономия ресурсов при долгой работе"
     priority: "low"
     use_case: "resource_farming"
-    
+
   # Профиль для минимального поддержания аккаунтов
   dormant:
     cpu: 1                    # Минимум CPU
     memory: 1024              # Минимум памяти
     fps: 15                   # Очень низкий FPS
-    resolution: "540x960"     # Низкое разрешение для экономии
+    resolution: "540x960"     # УНИФИЦИРОВАННОЕ разрешение
     description: "Минимальное поддержание - максимальная экономия ресурсов"
     priority: "minimal"
     use_case: "maintenance_only"
-    
+
   # Профиль для критичных задач (щиты заканчиваются)
   emergency:
     cpu: 4                    # Максимум CPU для быстрого решения
     memory: 4096              # Максимум памяти
     fps: 60                   # Высокий FPS для отзывчивости
-    resolution: "540x960"    # Оптимальное разрешение (баланс качество/производительность)
+    resolution: "540x960"     # УНИФИЦИРОВАННОЕ разрешение
     description: "Критичные задачи - максимальная производительность для экстренных ситуаций"
     priority: "critical"
     use_case: "emergency_tasks"
+
+# ВАЖНОЕ ПРИМЕЧАНИЕ ПО РАЗРЕШЕНИЮ 540x960:
+# Это разрешение выбрано как стандарт для всех профилей по следующим причинам:
+# 1. Совместимость с шаблонами изображений - все скриншоты будут одного размера
+# 2. Экономия системных ресурсов - не слишком высокое разрешение
+# 3. Читаемость интерфейса игры - достаточное качество для распознавания элементов
+# 4. Стабильность работы - проверенное разрешение для мобильных игр
 
 # Настройки применения профилей
 profile_settings:
@@ -60,11 +68,11 @@ profile_settings:
     rules:
       - level_range: [10, 15]
         profile: "rushing"
-      - level_range: [16, 19]  
+      - level_range: [16, 19]
         profile: "developing"
       - level_range: [20, 999]
         profile: "farming"
-        
+
   # Расписание профилей по времени суток
   time_based_switching:
     enabled: false    # Отключено по умолчанию
@@ -72,11 +80,11 @@ profile_settings:
       # Ночной режим (экономия ресурсов)
       - time_range: ["00:00", "06:00"]
         profile: "dormant"
-      # Дневной режим (активная работа)  
+      # Дневной режим (активная работа)
       - time_range: ["06:00", "22:00"]
         profile: "auto"  # Автоматический выбор по уровню
       # Вечерний режим (подготовка к ночи)
-      - time_range: ["22:00", "00:00"] 
+      - time_range: ["22:00", "00:00"]
         profile: "farming"
 
 # Ограничения ресурсов системы
@@ -88,31 +96,31 @@ resource_limits:
     farming: 10       # До 10 лёгких эмуляторов
     dormant: 20       # Много dormant эмуляторов можно
     emergency: 2      # Ограничиваем emergency для стабильности
-    
+
   # Пороги системных ресурсов для автоматического снижения профилей
   system_thresholds:
     cpu_usage:
       warning: 75     # % CPU - начинаем снижать производительность
       critical: 85    # % CPU - переходим на минимальные профили
       emergency: 95   # % CPU - останавливаем несрочные задачи
-      
+
     memory_usage:
       warning: 70     # % RAM - предупреждение
       critical: 80    # % RAM - снижение профилей
       emergency: 90   # % RAM - экстренные меры
-      
+
   # Действия при превышении порогов
   auto_scaling:
     enabled: true
     actions:
       - threshold: "warning"
         action: "reduce_fps"        # Снижаем FPS на 25%
-      - threshold: "critical" 
+      - threshold: "critical"
         action: "downgrade_profile" # Переводим на профиль уровнем ниже
       - threshold: "emergency"
         action: "stop_non_critical" # Останавливаем не критичные эмуляторы
 
-# Настройки производительности для батчевых операций  
+# Настройки производительности для батчевых операций
 batch_operations:
   # Параметры запуска батчей
   startup:
@@ -120,17 +128,17 @@ batch_operations:
     start_delay_between: 5     # Секунды между запусками
     startup_timeout: 60        # Таймаут запуска одного эмулятора
     readiness_timeout: 120     # Таймаут готовности батча
-    
+
   # Параметры остановки батчей
   shutdown:
     max_parallel_stops: 5      # Максимум одновременных остановок
     graceful_timeout: 30       # Таймаут корректной остановки
     force_timeout: 15          # Таймаут принудительной остановки
-    
+
   # Стратегии восстановления
   recovery:
     max_restart_attempts: 3    # Максимум попыток перезапуска
-    restart_delay: 10          # Пауза между попытками перезапуска  
+    restart_delay: 10          # Пауза между попытками перезапуска
     health_check_interval: 30  # Интервал проверки здоровья эмуляторов
 
 # Мониторинг производительности
@@ -138,18 +146,18 @@ monitoring:
   # Метрики для сбора
   metrics:
     - "cpu_usage_per_emulator"
-    - "memory_usage_per_emulator" 
+    - "memory_usage_per_emulator"
     - "startup_time"
     - "adb_response_time"
     - "emulator_crashes"
     - "profile_efficiency"
-    
+
   # Интервалы сбора метрик
   collection_intervals:
     system_resources: 30       # Секунды - системные ресурсы
     emulator_health: 60        # Секунды - здоровье эмуляторов
     performance_stats: 300     # Секунды - статистика производительности
-    
+
   # Хранение данных мониторинга
   retention:
     raw_metrics: "24h"         # 24 часа сырых метрик
@@ -163,13 +171,13 @@ advanced_settings:
     dynamic_resource_allocation: false  # Динамическое изменение ресурсов
     predictive_scaling: false          # Предиктивное масштабирование
     ai_profile_optimization: false     # ИИ-оптимизация профилей
-    
+
   # Совместимость с различными версиями LDPlayer
   compatibility:
     ldplayer_version: "9.x"           # Целевая версия LDPlayer
     fallback_profiles: true           # Резервные профили при ошибках
     legacy_command_support: true      # Поддержка старых команд
-    
+
   # Отладка и логирование
   debug:
     verbose_logging: false            # Подробное логирование
