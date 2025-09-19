@@ -1,11 +1,12 @@
 """
-Модуль автообнаружения эмуляторов LDPlayer.
-Сканирует систему, находит ldconsole.exe, получает список эмуляторов и сохраняет конфигурацию.
+Расширение модуля автообнаружения эмуляторов LDPlayer.
+Добавлены функции управления: enable/disable эмуляторов, фильтрация, CLI поддержка.
 """
 import os
 import re
 import subprocess
 import winreg
+import fnmatch
 from datetime import datetime
 from pathlib import Path
 import yaml
@@ -361,6 +362,10 @@ class EmulatorDiscovery:
                 if 'ldplayer' in config and 'path' in config['ldplayer']:
                     self.ldplayer_path = config['ldplayer']['path']
 
+                # Загружаем эмуляторы из конфига
+                if 'emulators' in config:
+                    self.emulators = config['emulators']
+
                 return config
             else:
                 logger.info("Файл конфигурации не найден, создаём новый")
@@ -436,6 +441,335 @@ class EmulatorDiscovery:
             logger.error(f"Ошибка сохранения конфигурации: {e}")
             return False
 
+    # ===== НОВЫЕ ФУНКЦИИ УПРАВЛЕНИЯ (Промпт 7) =====
+
+    def add_emulator(self, name, index, adb_port=None, enabled=True, profile='rushing', priority=None):
+        """
+        Добавить эмулятор вручную
+
+        Args:
+            name (str): Имя эмулятора
+            index (int): Индекс в LDPlayer
+            adb_port (int, optional): ADB порт
+            enabled (bool): Включен ли эмулятор
+            profile (str): Профиль эмулятора
+            priority (int, optional): Приоритет
+
+        Returns:
+            bool: True если добавлен успешно
+        """
+        try:
+            # Проверяем, что эмулятор с таким именем не существует
+            existing = self.get_emulator_by_name(name)
+            if existing:
+                logger.warning(f"Эмулятор с именем '{name}' уже существует")
+                return False
+
+            # Создаём новый эмулятор
+            new_emulator = {
+                'name': name,
+                'index': index,
+                'adb_port': adb_port,
+                'is_running': False,  # По умолчанию не запущен
+                'enabled': enabled,
+                'profile': profile,
+                'priority': priority or (len(self.emulators) + 1)
+            }
+
+            self.emulators.append(new_emulator)
+            logger.info(f"✓ Эмулятор '{name}' добавлен")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Ошибка добавления эмулятора '{name}': {e}")
+            return False
+
+    def enable_emulator(self, name_or_pattern):
+        """
+        Включить эмулятор(ы) по имени или паттерну
+
+        Args:
+            name_or_pattern (str): Имя эмулятора или паттерн (например, "сервер 333-*")
+
+        Returns:
+            int: Количество включённых эмуляторов
+        """
+        try:
+            enabled_count = 0
+            matched_emulators = self._find_emulators_by_pattern(name_or_pattern)
+
+            for emu in matched_emulators:
+                emu['enabled'] = True
+                enabled_count += 1
+                logger.info(f"✓ Эмулятор '{emu['name']}' включён")
+
+            if enabled_count == 0:
+                logger.warning(f"Не найдено эмуляторов по паттерну '{name_or_pattern}'")
+            else:
+                logger.info(f"Включено эмуляторов: {enabled_count}")
+
+            return enabled_count
+
+        except Exception as e:
+            logger.error(f"Ошибка включения эмуляторов '{name_or_pattern}': {e}")
+            return 0
+
+    def disable_emulator(self, name_or_pattern):
+        """
+        Выключить эмулятор(ы) по имени или паттерну
+
+        Args:
+            name_or_pattern (str): Имя эмулятора или паттерн
+
+        Returns:
+            int: Количество выключенных эмуляторов
+        """
+        try:
+            disabled_count = 0
+            matched_emulators = self._find_emulators_by_pattern(name_or_pattern)
+
+            for emu in matched_emulators:
+                emu['enabled'] = False
+                disabled_count += 1
+                logger.info(f"✓ Эмулятор '{emu['name']}' выключён")
+
+            if disabled_count == 0:
+                logger.warning(f"Не найдено эмуляторов по паттерну '{name_or_pattern}'")
+            else:
+                logger.info(f"Выключено эмуляторов: {disabled_count}")
+
+            return disabled_count
+
+        except Exception as e:
+            logger.error(f"Ошибка выключения эмуляторов '{name_or_pattern}': {e}")
+            return 0
+
+    def get_enabled_emulators(self, profile_filter=None, running_only=False):
+        """
+        Получить список включённых эмуляторов
+
+        Args:
+            profile_filter (str, optional): Фильтр по профилю
+            running_only (bool): Только запущенные эмуляторы
+
+        Returns:
+            list: Список включённых эмуляторов
+        """
+        try:
+            enabled_emulators = [emu for emu in self.emulators if emu.get('enabled', True)]
+
+            # Фильтр по профилю
+            if profile_filter:
+                enabled_emulators = [
+                    emu for emu in enabled_emulators
+                    if emu.get('profile', 'rushing') == profile_filter
+                ]
+
+            # Фильтр только запущенных
+            if running_only:
+                enabled_emulators = [
+                    emu for emu in enabled_emulators
+                    if emu.get('is_running', False)
+                ]
+
+            # Сортируем по приоритету
+            enabled_emulators.sort(key=lambda x: x.get('priority', 999))
+
+            logger.debug(f"Найдено включённых эмуляторов: {len(enabled_emulators)}")
+            return enabled_emulators
+
+        except Exception as e:
+            logger.error(f"Ошибка получения включённых эмуляторов: {e}")
+            return []
+
+    def set_emulator_profile(self, name_or_pattern, profile):
+        """
+        Установить профиль для эмулятора(ов)
+
+        Args:
+            name_or_pattern (str): Имя эмулятора или паттерн
+            profile (str): Новый профиль (rushing, developing, farming, dormant)
+
+        Returns:
+            int: Количество обновлённых эмуляторов
+        """
+        try:
+            valid_profiles = ['rushing', 'developing', 'farming', 'dormant']
+            if profile not in valid_profiles:
+                logger.error(f"Неверный профиль '{profile}'. Доступные: {valid_profiles}")
+                return 0
+
+            updated_count = 0
+            matched_emulators = self._find_emulators_by_pattern(name_or_pattern)
+
+            for emu in matched_emulators:
+                old_profile = emu.get('profile', 'rushing')
+                emu['profile'] = profile
+                updated_count += 1
+                logger.info(f"✓ Эмулятор '{emu['name']}': профиль {old_profile} -> {profile}")
+
+            if updated_count == 0:
+                logger.warning(f"Не найдено эмуляторов по паттерну '{name_or_pattern}'")
+            else:
+                logger.info(f"Обновлено профилей: {updated_count}")
+
+            return updated_count
+
+        except Exception as e:
+            logger.error(f"Ошибка установки профиля '{profile}' для '{name_or_pattern}': {e}")
+            return 0
+
+    def set_emulator_priority(self, name, priority):
+        """
+        Установить приоритет для эмулятора
+
+        Args:
+            name (str): Имя эмулятора
+            priority (int): Новый приоритет (меньше = выше приоритет)
+
+        Returns:
+            bool: True если обновлён успешно
+        """
+        try:
+            emulator = self.get_emulator_by_name(name)
+            if not emulator:
+                logger.error(f"Эмулятор '{name}' не найден")
+                return False
+
+            old_priority = emulator.get('priority', 999)
+            emulator['priority'] = priority
+            logger.info(f"✓ Эмулятор '{name}': приоритет {old_priority} -> {priority}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Ошибка установки приоритета для '{name}': {e}")
+            return False
+
+    def filter_emulators(self, name_pattern=None, profile=None, enabled=None, running=None):
+        """
+        Фильтрация эмуляторов по различным критериям
+
+        Args:
+            name_pattern (str, optional): Паттерн имени
+            profile (str, optional): Профиль
+            enabled (bool, optional): Статус включения
+            running (bool, optional): Статус запуска
+
+        Returns:
+            list: Отфильтрованный список эмуляторов
+        """
+        try:
+            filtered = self.emulators.copy()
+
+            # Фильтр по имени/паттерну
+            if name_pattern:
+                filtered = [
+                    emu for emu in filtered
+                    if fnmatch.fnmatch(emu['name'], name_pattern)
+                ]
+
+            # Фильтр по профилю
+            if profile:
+                filtered = [
+                    emu for emu in filtered
+                    if emu.get('profile', 'rushing') == profile
+                ]
+
+            # Фильтр по статусу включения
+            if enabled is not None:
+                filtered = [
+                    emu for emu in filtered
+                    if emu.get('enabled', True) == enabled
+                ]
+
+            # Фильтр по статусу запуска
+            if running is not None:
+                filtered = [
+                    emu for emu in filtered
+                    if emu.get('is_running', False) == running
+                ]
+
+            return filtered
+
+        except Exception as e:
+            logger.error(f"Ошибка фильтрации эмуляторов: {e}")
+            return []
+
+    def apply_auto_profiles(self):
+        """
+        Применить автоматические профили согласно правилам в конфиге
+
+        Returns:
+            int: Количество обновлённых эмуляторов
+        """
+        try:
+            config = self.load_config()
+            auto_profiles = config.get('auto_profiles', {})
+            patterns = auto_profiles.get('patterns', [])
+            default_profile = auto_profiles.get('default_profile', 'rushing')
+
+            updated_count = 0
+
+            for emu in self.emulators:
+                # Ищем подходящий паттерн
+                matched_profile = None
+
+                for pattern_rule in patterns:
+                    pattern = pattern_rule.get('pattern', '')
+                    profile = pattern_rule.get('profile', default_profile)
+
+                    if fnmatch.fnmatch(emu['name'], pattern):
+                        matched_profile = profile
+                        break
+
+                # Применяем найденный или дефолтный профиль
+                target_profile = matched_profile or default_profile
+
+                if emu.get('profile') != target_profile:
+                    old_profile = emu.get('profile', 'не задан')
+                    emu['profile'] = target_profile
+                    updated_count += 1
+                    logger.info(f"✓ Эмулятор '{emu['name']}': автопрофиль {old_profile} -> {target_profile}")
+
+            if updated_count > 0:
+                logger.info(f"Применены автопрофили для {updated_count} эмуляторов")
+            else:
+                logger.info("Автопрофили уже актуальны")
+
+            return updated_count
+
+        except Exception as e:
+            logger.error(f"Ошибка применения автопрофилей: {e}")
+            return 0
+
+    def _find_emulators_by_pattern(self, name_or_pattern):
+        """
+        Поиск эмуляторов по имени или паттерну
+
+        Args:
+            name_or_pattern (str): Имя или паттерн для поиска
+
+        Returns:
+            list: Список найденных эмуляторов
+        """
+        try:
+            # Если паттерн содержит wildcards (* или ?), используем fnmatch
+            if '*' in name_or_pattern or '?' in name_or_pattern:
+                return [
+                    emu for emu in self.emulators
+                    if fnmatch.fnmatch(emu['name'], name_or_pattern)
+                ]
+            else:
+                # Иначе ищем точное совпадение
+                emulator = self.get_emulator_by_name(name_or_pattern)
+                return [emulator] if emulator else []
+
+        except Exception as e:
+            logger.error(f"Ошибка поиска эмуляторов по паттерну '{name_or_pattern}': {e}")
+            return []
+
     def discover_and_save(self):
         """
         Полный цикл: поиск LDPlayer → сканирование эмуляторов → сохранение конфига
@@ -450,6 +784,7 @@ class EmulatorDiscovery:
             'ldplayer_found': False,
             'emulators_found': 0,
             'config_saved': False,
+            'auto_profiles_applied': 0,
             'message': ''
         }
 
@@ -474,15 +809,20 @@ class EmulatorDiscovery:
                 result['message'] = "Эмуляторы не найдены"
                 return result
 
-            # 3. Сохранение конфигурации
-            logger.info("3. Сохранение конфигурации...")
+            # 3. Применение автопрофилей
+            logger.info("3. Применение автопрофилей...")
+            auto_profiles_applied = self.apply_auto_profiles()
+            result['auto_profiles_applied'] = auto_profiles_applied
+
+            # 4. Сохранение конфигурации
+            logger.info("4. Сохранение конфигурации...")
             config_saved = self.save_config()
 
             result['config_saved'] = config_saved
 
             if config_saved:
                 result['success'] = True
-                result['message'] = f"Успешно: найден LDPlayer, {len(emulators)} эмуляторов, конфиг сохранён"
+                result['message'] = f"Успешно: найден LDPlayer, {len(emulators)} эмуляторов, {auto_profiles_applied} автопрофилей, конфиг сохранён"
             else:
                 result['message'] = "Ошибка сохранения конфигурации"
 
@@ -548,24 +888,77 @@ class EmulatorDiscovery:
             'last_scan': self.last_scan
         }
 
+    def print_emulators_table(self, show_disabled=False):
+        """
+        Красивый вывод таблицы эмуляторов
 
-def test_emulator_discovery():
-    """Тестовая функция для проверки EmulatorDiscovery"""
-    logger.info("=== Тестирование EmulatorDiscovery ===")
+        Args:
+            show_disabled (bool): Показывать ли отключённые эмуляторы
+        """
+        try:
+            emulators_to_show = self.emulators
+            if not show_disabled:
+                emulators_to_show = [emu for emu in self.emulators if emu.get('enabled', True)]
+
+            if not emulators_to_show:
+                print("Эмуляторы не найдены" if not self.emulators else "Все эмуляторы отключены")
+                return
+
+            # Заголовок таблицы
+            print("\n" + "="*100)
+            print(f"{'Имя':<25} {'Индекс':<7} {'ADB Порт':<10} {'Запущен':<8} {'Включён':<8} {'Профиль':<12} {'Приоритет':<10}")
+            print("="*100)
+
+            # Строки с данными
+            for emu in emulators_to_show:
+                name = emu['name'][:24]  # Обрезаем длинные имена
+                index = str(emu['index'])
+                adb_port = str(emu.get('adb_port', 'N/A'))
+                is_running = '✓' if emu.get('is_running', False) else '✗'
+                enabled = '✓' if emu.get('enabled', True) else '✗'
+                profile = emu.get('profile', 'N/A')
+                priority = str(emu.get('priority', 'N/A'))
+
+                print(f"{name:<25} {index:<7} {adb_port:<10} {is_running:<8} {enabled:<8} {profile:<12} {priority:<10}")
+
+            print("="*100)
+            print(f"Всего эмуляторов: {len(emulators_to_show)}")
+
+        except Exception as e:
+            logger.error(f"Ошибка вывода таблицы эмуляторов: {e}")
+
+
+def test_emulator_management():
+    """Тестовая функция для проверки функций управления"""
+    logger.info("=== Тестирование управления эмуляторами ===")
 
     discovery = EmulatorDiscovery()
 
     # Полный цикл обнаружения
     result = discovery.discover_and_save()
-
     logger.info(f"Результат обнаружения: {result}")
 
-    # Показываем сводку
-    summary = discovery.get_summary()
-    logger.info(f"Сводка по эмуляторам: {summary}")
+    if result['success']:
+        # Тестируем функции управления
+        logger.info("\n--- Тестирование функций управления ---")
+
+        # Показываем таблицу эмуляторов
+        discovery.print_emulators_table()
+
+        # Получаем включённые эмуляторы
+        enabled = discovery.get_enabled_emulators()
+        logger.info(f"Включённых эмуляторов: {len(enabled)}")
+
+        # Тестируем фильтрацию
+        rushing_emulators = discovery.filter_emulators(profile='rushing')
+        logger.info(f"Эмуляторов с профилем 'rushing': {len(rushing_emulators)}")
+
+        # Показываем сводку
+        summary = discovery.get_summary()
+        logger.info(f"Сводка: {summary}")
 
     return result['success']
 
 
 if __name__ == "__main__":
-    test_emulator_discovery()
+    test_emulator_management()
