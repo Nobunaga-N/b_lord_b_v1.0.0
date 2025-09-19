@@ -1,6 +1,7 @@
 """
 Основной исполнитель для работы с одним эмулятором.
 Выполняет последовательность игровых действий для одного аккаунта.
+Обновлён для использования базовых игровых действий.
 """
 import sys
 import os
@@ -14,6 +15,7 @@ from loguru import logger
 sys.path.append(str(Path(__file__).parent))
 
 from utils.adb_controller import ADBController
+from actions.basic import BasicActions
 
 # Настройка логирования
 logger.add("logs/bot_worker_{time}.log", rotation="100 MB", level="INFO")
@@ -33,6 +35,7 @@ class BotWorker:
         self.emulator_name = emulator_name
         self.adb_port = adb_port
         self.controller = None
+        self.basic_actions = None
         self.start_time = datetime.now()
 
         logger.info(f"BotWorker инициализирован для {emulator_name} на порту {adb_port}")
@@ -43,7 +46,7 @@ class BotWorker:
 
     def connect_to_emulator(self):
         """
-        Подключение к эмулятору
+        Подключение к эмулятору и инициализация действий
 
         Returns:
             bool: True если подключение успешно
@@ -55,6 +58,10 @@ class BotWorker:
 
             if self.controller.connect():
                 logger.info(f"✓ Успешное подключение к {self.emulator_name}")
+
+                # Инициализируем модуль базовых действий
+                self.basic_actions = BasicActions(self.controller)
+                logger.info("✓ Модуль базовых действий инициализирован")
 
                 # Получаем информацию об устройстве
                 device_info = self.controller.get_device_info()
@@ -127,9 +134,92 @@ class BotWorker:
             logger.error(f"Ошибка проверки статуса эмулятора: {e}")
             return False
 
+    def execute_basic_game_actions(self):
+        """
+        Выполнить базовую последовательность игровых действий
+
+        Returns:
+            dict: Результат выполнения действий
+        """
+        try:
+            logger.info("=== Выполнение базовых игровых действий ===")
+
+            actions_results = {
+                'enter_game': None,
+                'go_to_main': None,
+                'check_shield': None,
+                'overall_success': False
+            }
+
+            # 1. Вход в игру
+            logger.info("1. Попытка входа в игру...")
+            enter_result = self.basic_actions.enter_game()
+            actions_results['enter_game'] = enter_result
+
+            if not enter_result['success']:
+                logger.error(f"✗ Не удалось войти в игру: {enter_result['message']}")
+                # Продолжаем выполнение, возможно игра уже запущена
+                logger.info("Продолжаем, предполагая что игра уже запущена...")
+            else:
+                logger.info(f"✓ Успешно вошли в игру: {enter_result['message']}")
+
+            # Пауза между действиями
+            time.sleep(3)
+
+            # 2. Переход на главный экран
+            logger.info("2. Переход на главный экран...")
+            main_result = self.basic_actions.go_to_main_screen()
+            actions_results['go_to_main'] = main_result
+
+            if main_result['success']:
+                logger.info(f"✓ Главный экран: {main_result['message']}")
+            else:
+                logger.warning(f"⚠ Проблемы с главным экраном: {main_result['message']}")
+
+            # Пауза между действиями
+            time.sleep(2)
+
+            # 3. Проверка защитного щита
+            logger.info("3. Проверка защитного щита...")
+            shield_result = self.basic_actions.check_shield(activate_if_needed=True)
+            actions_results['check_shield'] = shield_result
+
+            if shield_result['success']:
+                logger.info(f"✓ Щит: {shield_result['message']}")
+                if shield_result['activated_new']:
+                    logger.info("✓ Новый щит был активирован!")
+            else:
+                logger.warning(f"⚠ Проблемы со щитом: {shield_result['message']}")
+
+            # Определяем общий успех
+            # Считаем успешным, если хотя бы одно действие выполнилось
+            success_count = sum([
+                1 for result in actions_results.values()
+                if result and isinstance(result, dict) and result.get('success', False)
+            ])
+
+            actions_results['overall_success'] = success_count > 0
+
+            if actions_results['overall_success']:
+                logger.info(f"✓ Базовые действия выполнены (успешных: {success_count}/3)")
+            else:
+                logger.error("✗ Не удалось выполнить ни одного базового действия")
+
+            return actions_results
+
+        except Exception as e:
+            logger.error(f"Ошибка выполнения базовых игровых действий: {e}")
+            return {
+                'enter_game': None,
+                'go_to_main': None,
+                'check_shield': None,
+                'overall_success': False,
+                'error': str(e)
+            }
+
     def basic_test_actions(self):
         """
-        Выполнить базовые тестовые действия
+        Выполнить базовые тестовые действия (старая версия для совместимости)
         """
         try:
             logger.info("Выполнение базовых тестовых действий...")
@@ -140,11 +230,17 @@ class BotWorker:
                 logger.error("Не удалось получить начальный скриншот")
                 return False
 
-            # 2. Пауза для анализа
+            # 2. Если у нас есть модуль базовых действий, используем его
+            if self.basic_actions:
+                logger.info("Используем модуль базовых игровых действий...")
+                game_actions_result = self.execute_basic_game_actions()
+                return game_actions_result['overall_success']
+
+            # 3. Иначе выполняем простые тестовые действия
             logger.info("Анализ текущего состояния экрана...")
             time.sleep(2)
 
-            # 3. Тестовый тап по центру экрана (безопасное действие)
+            # Тестовый тап по центру экрана (безопасное действие)
             logger.info("Выполнение тестового тапа...")
             screenshot = self.controller.screenshot()
             if screenshot:
@@ -163,7 +259,7 @@ class BotWorker:
                 else:
                     logger.error("✗ Ошибка выполнения тестового тапа")
 
-            # 4. Финальный скриншот
+            # Финальный скриншот
             self.take_screenshot("final")
 
             logger.info("✓ Базовые тестовые действия завершены")
@@ -192,12 +288,31 @@ class BotWorker:
                 logger.error("Эмулятор не отвечает")
                 return False
 
-            # 3. Выполнение базовых действий
-            success = self.basic_test_actions()
+            # 3. Выполнение игровых действий
+            if self.basic_actions:
+                # Используем новый модуль игровых действий
+                logger.info("=== НАЧАЛО ИГРОВОЙ СЕССИИ ===")
+                game_result = self.execute_basic_game_actions()
+                success = game_result['overall_success']
+
+                # Логируем детальные результаты
+                for action_name, result in game_result.items():
+                    if action_name != 'overall_success' and result:
+                        logger.info(f"  {action_name}: {result.get('message', 'выполнено')}")
+
+                logger.info("=== КОНЕЦ ИГРОВОЙ СЕССИИ ===")
+            else:
+                # Используем старые тестовые действия
+                success = self.basic_test_actions()
 
             # 4. Подсчёт времени выполнения
             duration = datetime.now() - self.start_time
             logger.info(f"Время выполнения: {duration.total_seconds():.1f} секунд")
+
+            if success:
+                logger.info(f"✓ Обработка аккаунта {self.emulator_name} завершена успешно")
+            else:
+                logger.warning(f"⚠ Обработка аккаунта {self.emulator_name} завершена с проблемами")
 
             return success
 

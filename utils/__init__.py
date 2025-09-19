@@ -3,5 +3,15 @@
 """
 from .adb_controller import ADBController
 from .image_recognition import ImageRecognition, find_template, click_template, wait_for_template
-# from .database import Database  # Будет добавлено позже
-# from .error_handler import ErrorHandler  # Будет добавлено позже
+
+# Модули, которые будут добавлены в следующих промптах:
+# from .database import Database
+# from .error_handler import ErrorHandler
+
+__all__ = [
+    'ADBController',
+    'ImageRecognition',
+    'find_template',
+    'click_template',
+    'wait_for_template',
+]
